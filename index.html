@@ -60,7 +60,7 @@
   }
   .eye { width: 1.2em; height: 1.2em; flex: none; }
   .eye .lid-open { transform-origin: 16px 16px; }
-  body.awake .eye .lid-open { animation: blink 10s infinite; }
+  body.awake .eye .lid-open { animation: blink 5s infinite; }
   body:not(.awake) .eye .lid-open { display: none; }
   body.awake .eye .lid-closed { display: none; }
   @keyframes blink { 0%, 97%, 100% { transform: scaleY(1); } 98.5% { transform: scaleY(0.08); } }
