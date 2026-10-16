@@ -39,6 +39,8 @@
   }
   a { color: var(--accent); }
   .wrap { width: 100%; max-width: 980px; margin: 0 auto; padding: 0 20px; }
+  /* Whole UI at 90%. Zooming the sections (not body) keeps body's full-height layout intact. */
+  header, main, footer { zoom: 0.9; }
 
   /* ---- Header ---- */
   header { padding: 22px 0; }
