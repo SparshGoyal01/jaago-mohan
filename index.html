@@ -115,6 +115,7 @@
   .icon svg { width: 22px; height: 22px; }
   .card h2 { font-size: 16px; font-weight: 600; margin: 0; flex: 1; }
   .card p { margin: 0; color: var(--muted); font-size: 14px; }
+  .card .sidenote { margin-top: -6px; font-size: 12px; font-style: italic; color: var(--faint); }
 
   .switch {
     position: relative; flex: none;
@@ -196,7 +197,7 @@
       </svg>
       <span id="headline">Mohan is asleep</span>
     </h1>
-    <p class="sub" id="subline">Turn something on to wake him up.</p>
+    <p class="sub" id="subline">Wake him up</p>
     <div class="timer" id="timer">00:00:00</div>
   </section>
 
@@ -232,6 +233,7 @@
         <button class="switch" id="sw-active" role="switch" aria-checked="false" aria-labelledby="t-active"><span class="knob"></span></button>
       </div>
       <p>Keeps you green on Slack and Teams while you step away.</p>
+      <p class="sidenote">May not work on iOS</p>
       <div class="helper" id="helper">
         <strong>One-time setup: the Windows helper</strong>
         Websites can't press keys for you, so a tiny helper does it, and this page switches it on and off.
@@ -306,7 +308,7 @@ function render() {
   document.body.classList.toggle('awake', awake);
   $('timer').textContent = fmt(awake ? now - sessionSince : 0);
   $('headline').innerHTML = awake ? 'Jaago Mohan <span class="accent">Pyaare</span>' : 'Mohan is asleep';
-  $('subline').textContent = awake ? 'Mohan is up, and so are you, apparently.' : 'Turn something on to wake him up.';
+  $('subline').textContent = awake ? 'Mohan is up, and so are you, apparently.' : 'Wake him up';
   // The tab title is the one thing visible from another tab, so flag a paused Stay Awake there.
   const paused = wantAwake && !wakeLock;
   document.title = paused ? '⏸ Paused · Jaago Mohan' : awake ? `${fmt(now - sessionSince)} · Jaago Mohan` : 'Jaago Mohan';
