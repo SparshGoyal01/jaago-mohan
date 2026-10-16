@@ -144,6 +144,11 @@
   .dot.warn { background: var(--warn); }
   .status .since { margin-left: auto; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--text); }
 
+  .seg { display: flex; gap: 3px; padding: 3px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
+  .seg button { flex: 1; border: 0; border-radius: 7px; padding: 6px 4px; background: none; color: var(--muted); font: 500 13px Inter, system-ui, sans-serif; cursor: pointer; transition: background 0.2s, color 0.2s; }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-checked="true"] { background: var(--accent-soft); color: var(--accent); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .volume { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
   .volume input { flex: 1; accent-color: var(--accent); }
 
@@ -258,7 +263,12 @@
         <h2 id="t-sound">Keyboard Sound</h2>
         <button class="switch" id="sw-sound" role="switch" aria-checked="false" aria-labelledby="t-sound"><span class="knob"></span></button>
       </div>
-      <p>Soft typing in bursts, like you're deep in work. Plays through your speakers.</p>
+      <p>Typing in bursts, like you're deep in work. Plays through your speakers.</p>
+      <div class="seg" id="sound-type" role="radiogroup" aria-label="Keyboard sound">
+        <button type="button" role="radio" data-sound="laptop">Laptop</button>
+        <button type="button" role="radio" data-sound="mechanical">Mechanical</button>
+        <button type="button" role="radio" data-sound="typewriter">Typewriter</button>
+      </div>
       <label class="volume">Volume <input type="range" id="volume" min="0" max="100" value="60"></label>
       <div class="status"><span class="dot" id="dot-sound"></span><span id="st-sound">Off</span><span class="since" id="since-sound"></span></div>
     </article>
@@ -425,40 +435,81 @@ setInterval(() => { if (pendingOn || helper.connected) syncHelper(); }, 4000);
 if (remembered()) syncHelper();
 
 // ---- 3. Keyboard Sound: synthesized with Web Audio -------------------------------------
-let audioCtx = null, gainNode = null, source = null;
+let audioCtx = null, gainNode = null, source = null, preview = null;
 
-// One click: decaying high-passed noise (the "tick") over a low decaying sine (the "thock").
-function addClick(d, sr, start, amp, tone, tau) {
-  const len = Math.floor(0.06 * sr);
+// Each profile tunes the same click recipe. Ranges are [min, max].
+const SOUNDS = {
+  laptop: {      // soft chiclet keys
+    key: [180, 300], space: [110, 140], tau: 0.004, spaceTau: 0.006,
+    body: 0.012, bodyMix: 0.6, bright: 0.5, ping: null, release: 0.35, step: [0.09, 0.21], amp: 0.45,
+  },
+  mechanical: {  // clicky switches: sharp tick, metallic ping, loud upstroke
+    key: [320, 460], space: [160, 200], tau: 0.0025, spaceTau: 0.004,
+    body: 0.02, bodyMix: 0.5, bright: 0.9, ping: [2400, 3200], release: 0.6, step: [0.08, 0.18], amp: 0.38,
+  },
+  typewriter: {  // heavy slow thunks, a bell and carriage return at the end of each line
+    key: [90, 140], space: [70, 90], tau: 0.008, spaceTau: 0.01,
+    body: 0.035, bodyMix: 0.9, bright: 0.7, ping: null, release: 0.2, step: [0.15, 0.35], amp: 0.36,
+    line: [45, 65],
+  },
+};
+let soundType = 'laptop';
+try { if (SOUNDS[localStorage.getItem('jm-sound')]) soundType = localStorage.getItem('jm-sound'); } catch {}
+
+const rand = ([a, b]) => a + Math.random() * (b - a);
+
+// One click: decaying high-passed noise (the "tick") over a low decaying sine (the "thock"),
+// plus an optional short high ping for clicky switches.
+function addClick(d, sr, start, amp, tone, tau, p, ping) {
+  const len = Math.floor(0.08 * sr);
   let prev = 0, lp = 0;
   for (let i = 0; i < len && start + i < d.length; i++) {
     const s = i / sr;
     const n = Math.random() * 2 - 1;
     const hp = n - prev; prev = n;
-    lp += (hp - lp) * 0.5;
-    const click = lp * Math.exp(-s / tau);
-    const body = Math.sin(2 * Math.PI * tone * s) * Math.exp(-s / 0.012) * 0.6;
-    d[start + i] += amp * (click + body);
+    lp += (hp - lp) * p.bright;
+    let v = lp * Math.exp(-s / tau) + Math.sin(2 * Math.PI * tone * s) * Math.exp(-s / p.body) * p.bodyMix;
+    if (ping) v += Math.sin(2 * Math.PI * ping * s) * Math.exp(-s / 0.004) * 0.5;
+    d[start + i] += amp * v;
   }
 }
 
-// `seconds` of typing (~70 wpm, words, spacebar, the odd pause), then `gap` seconds of silence.
-function renderBurst(seconds, gap) {
+// Typewriter end of line: a bell, then the carriage-return ratchet. Returns its length in seconds.
+function addCarriageReturn(d, sr, start, p) {
+  const bellLen = Math.floor(1.2 * sr);
+  for (let i = 0; i < bellLen && start + i < d.length; i++) {
+    const s = i / sr;
+    const w = 2 * Math.PI * 2093 * s;
+    d[start + i] += (Math.sin(w) + 0.5 * Math.sin(2 * w) + 0.3 * Math.sin(3 * w)) * Math.exp(-s / 0.35) * 0.25;
+  }
+  const ratchet = start + Math.floor(0.5 * sr);
+  for (let k = 0; k < 18; k++) addClick(d, sr, ratchet + Math.floor(k * 0.022 * sr), 0.25, 600, 0.002, p, null);
+  addClick(d, sr, ratchet + Math.floor(0.45 * sr), 0.7, 80, 0.01, p, null);
+  return 1.4;
+}
+
+// `seconds` of typing (words, spacebar, the odd pause), then `gap` seconds of silence.
+function renderBurst(seconds, gap, p = SOUNDS[soundType]) {
   const sr = audioCtx.sampleRate;
   const buf = audioCtx.createBuffer(1, Math.ceil((seconds + gap) * sr), sr);
   const d = buf.getChannelData(0);
   let t = 0.05, sinceSpace = 0, wordLen = 3 + Math.floor(Math.random() * 6);
+  let sinceLine = 0, lineLen = p.line ? Math.floor(rand(p.line)) : Infinity;
   while (t < seconds) {
     const space = sinceSpace >= wordLen;
-    const velocity = 0.6 + Math.random() * 0.4;
-    const tone = space ? 110 + Math.random() * 30 : 180 + Math.random() * 120;
-    const amp = (space ? 0.55 : 0.45) * velocity;
+    const amp = (space ? p.amp * 1.2 : p.amp) * (0.6 + Math.random() * 0.4);
+    const tone = rand(space ? p.space : p.key);
+    const ping = p.ping && !space ? rand(p.ping) : null;
     const at = Math.floor(t * sr);
-    addClick(d, sr, at, amp, tone, space ? 0.006 : 0.004);                                // key down
-    addClick(d, sr, at + Math.floor((0.05 + Math.random() * 0.06) * sr), amp * 0.35, tone * 1.3, 0.003); // key up
+    addClick(d, sr, at, amp, tone, space ? p.spaceTau : p.tau, p, ping);                                      // key down
+    addClick(d, sr, at + Math.floor((0.05 + Math.random() * 0.06) * sr), amp * p.release, tone * 1.3, 0.003, p, ping && ping * 1.1); // key up
     if (space) { sinceSpace = 0; wordLen = 2 + Math.floor(Math.random() * 8); } else sinceSpace++;
-    let step = 0.09 + Math.random() * 0.12;
+    let step = rand(p.step);
     if (space && Math.random() < 0.15) step += 0.3 + Math.random() * 0.9;
+    if (++sinceLine >= lineLen) {
+      step += addCarriageReturn(d, sr, at + Math.floor(0.25 * sr), p) + 0.25;
+      sinceLine = 0; lineLen = Math.floor(rand(p.line));
+    }
     t += step;
   }
   for (let i = 0; i < d.length; i++) d[i] = Math.tanh(d[i] * 0.8);
@@ -475,27 +526,55 @@ function playNextBurst() {
   source.start();
 }
 
-function applyVolume() {
-  if (gainNode) gainNode.gain.value = Math.pow($('volume').value / 100, 2) * 1.6;
+function stopBurst() {
+  if (source) { source.onended = null; source.stop(); source = null; }
 }
 
-$('sw-sound').addEventListener('click', () => {
-  if (features.sound.on) {
-    setOn('sound', false);
-    if (source) { source.onended = null; source.stop(); source = null; }
-    return;
-  }
-  if (!audioCtx) {
-    audioCtx = new AudioContext();
+function ensureAudio() {
+  if (!gainNode) {
+    audioCtx = audioCtx || new AudioContext();
     gainNode = audioCtx.createGain();
     gainNode.connect(audioCtx.destination);
     applyVolume();
   }
   audioCtx.resume();
+}
+
+function applyVolume() {
+  if (gainNode) gainNode.gain.value = Math.pow($('volume').value / 100, 2) * 1.6;
+}
+
+function renderSoundPicker() {
+  document.querySelectorAll('#sound-type button').forEach(b => b.setAttribute('aria-checked', b.dataset.sound === soundType));
+}
+
+// Picking a sound switches straight to it while playing, or plays a short sample while off.
+document.querySelectorAll('#sound-type button').forEach(b => b.addEventListener('click', () => {
+  soundType = b.dataset.sound;
+  try { localStorage.setItem('jm-sound', soundType); } catch {}
+  renderSoundPicker();
+  ensureAudio();
+  if (features.sound.on) { stopBurst(); playNextBurst(); return; }
+  if (preview) preview.stop();
+  preview = audioCtx.createBufferSource();
+  preview.buffer = renderBurst(soundType === 'typewriter' ? 4 : 2, 0.3, { ...SOUNDS[soundType], line: SOUNDS[soundType].line && [7, 9] });
+  preview.connect(gainNode);
+  preview.start();
+}));
+
+$('sw-sound').addEventListener('click', () => {
+  if (features.sound.on) {
+    setOn('sound', false);
+    stopBurst();
+    return;
+  }
+  ensureAudio();
+  if (preview) { preview.stop(); preview = null; }
   setOn('sound', true);
   playNextBurst();
 });
 $('volume').addEventListener('input', applyVolume);
+renderSoundPicker();
 
 render();
 </script>
