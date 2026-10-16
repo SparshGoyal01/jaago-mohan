@@ -42,14 +42,7 @@
 
   /* ---- Header ---- */
   header { padding: 22px 0; }
-  header .wrap { display: flex; align-items: center; gap: 12px; }
   .wordmark { font-family: "Yatra One", serif; font-size: 24px; letter-spacing: 0.3px; }
-  .eye { width: 38px; height: 38px; flex: none; }
-  .eye .lid-open { transform-origin: 16px 16px; }
-  body.awake .eye .lid-open { animation: blink 6s infinite; }
-  body:not(.awake) .eye .lid-open { display: none; }
-  body.awake .eye .lid-closed { display: none; }
-  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.08); } }
 
   /* ---- Hero / timer ---- */
   .hero { text-align: center; padding: 48px 0 40px; }
@@ -58,7 +51,17 @@
     font-weight: 400;
     font-size: clamp(28px, 5vw, 40px);
     margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35em;
   }
+  .eye { width: 1.2em; height: 1.2em; flex: none; }
+  .eye .lid-open { transform-origin: 16px 16px; }
+  body.awake .eye .lid-open { animation: blink 10s infinite; }
+  body:not(.awake) .eye .lid-open { display: none; }
+  body.awake .eye .lid-closed { display: none; }
+  @keyframes blink { 0%, 97%, 100% { transform: scaleY(1); } 98.5% { transform: scaleY(0.08); } }
   .hero h1 .accent { color: var(--accent); }
   .hero .sub { color: var(--muted); margin: 0; }
   .timer {
@@ -67,12 +70,11 @@
     font-size: clamp(56px, 13vw, 112px);
     line-height: 1;
     letter-spacing: -2px;
-    margin: 28px 0 10px;
+    margin: 28px 0 0;
     color: var(--faint);
     transition: color 0.4s;
   }
   body.awake .timer { color: var(--text); }
-  .timer-label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; }
 
   /* ---- Cards ---- */
   .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding-bottom: 40px; }
@@ -160,27 +162,28 @@
 
 <header>
   <div class="wrap">
-    <svg class="eye" viewBox="0 0 32 32" aria-hidden="true">
-      <g class="lid-open">
-        <path d="M2 16C6 9 11 6 16 6s10 3 14 10c-4 7-9 10-14 10S6 23 2 16z" fill="#f5a623"/>
-        <circle cx="16" cy="16" r="6.5" fill="#0e0f13"/>
-        <circle cx="18.5" cy="13.5" r="2" fill="#fff"/>
-      </g>
-      <g class="lid-closed" fill="none" stroke="#8d94a0" stroke-width="2.4" stroke-linecap="round">
-        <path d="M3 14c4 6 8.5 8 13 8s9-2 13-8"/>
-        <path d="M8 19.5l-2 3M16 22v3.5M24 19.5l2 3"/>
-      </g>
-    </svg>
     <span class="wordmark">Jaago Mohan</span>
   </div>
 </header>
 
 <main class="wrap">
   <section class="hero">
-    <h1 id="headline">Mohan is asleep</h1>
+    <h1>
+      <svg class="eye" viewBox="0 0 32 32" aria-hidden="true">
+        <g class="lid-open">
+          <path d="M2 16C6 9 11 6 16 6s10 3 14 10c-4 7-9 10-14 10S6 23 2 16z" fill="#f5a623"/>
+          <circle cx="16" cy="16" r="6.5" fill="#0e0f13"/>
+          <circle cx="18.5" cy="13.5" r="2" fill="#fff"/>
+        </g>
+        <g class="lid-closed" fill="none" stroke="#8d94a0" stroke-width="2.4" stroke-linecap="round">
+          <path d="M3 14c4 6 8.5 8 13 8s9-2 13-8"/>
+          <path d="M8 19.5l-2 3M16 22v3.5M24 19.5l2 3"/>
+        </g>
+      </svg>
+      <span id="headline">Mohan is asleep</span>
+    </h1>
     <p class="sub" id="subline">Turn something on to wake him up.</p>
     <div class="timer" id="timer">00:00:00</div>
-    <div class="timer-label" id="timer-label">awake for</div>
   </section>
 
   <section class="cards">
