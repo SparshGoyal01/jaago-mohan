@@ -87,6 +87,7 @@
     font-size: 14px;
     color: var(--text);
   }
+  .notice[hidden] { display: none; }
   .notice svg { width: 24px; height: 24px; flex: none; color: var(--accent); margin-top: 1px; }
   .notice strong { display: block; color: var(--accent); font-size: 15px; margin-bottom: 2px; }
 
@@ -199,7 +200,7 @@
     <div class="timer" id="timer">00:00:00</div>
   </section>
 
-  <aside class="notice" role="note">
+  <aside class="notice" id="notice" role="note" hidden>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 8h18M8 21h8"/></svg>
     <div>
       <strong>Keep this tab open and in view</strong>
@@ -265,7 +266,7 @@
 
 <footer>
   <div class="wrap">
-    <p>Everything runs in your browser, and the helper only listens on your own computer.</p>
+    <p>Keep this tab open. Everything runs in your browser, and the helper only listens on your own computer.</p>
     <p>Jaago Mohan Pyaare.</p>
   </div>
 </footer>
@@ -318,6 +319,7 @@ function render() {
 
   // Stay Awake
   $('sw-awake').setAttribute('aria-checked', wantAwake);
+  $('notice').hidden = !wantAwake;
   if (!wakeSupported) setStatus('awake', "This browser can't keep the screen on. Try Chrome, Edge or Safari.", 'warn');
   else if (wantAwake && wakeLock) setStatus('awake', 'Screen stays on while this tab is open', 'good');
   else if (wantAwake) setStatus('awake', 'Paused while this tab is hidden. Come back to resume.', 'warn');
