@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jaago Mohan</title>
+<meta name="description" content="Keep your laptop awake, your Slack green and your keyboard busy. Jaago Mohan Pyaare.">
+<meta name="theme-color" content="#0e0f13">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M2 16C6 9 11 6 16 6s10 3 14 10c-4 7-9 10-14 10S6 23 2 16z' fill='%23f5a623'/%3E%3Ccircle cx='16' cy='16' r='6.5' fill='%230e0f13'/%3E%3Ccircle cx='18.5' cy='13.5' r='2' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Yatra+One&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f13;
+    --surface: #16181e;
+    --surface-2: #1d2027;
+    --border: #272b34;
+    --text: #e8e6e3;
+    --muted: #8d94a0;
+    --faint: #5b616c;
+    --accent: #f5a623;
+    --accent-soft: rgba(245, 166, 35, 0.12);
+    --good: #3ecf8e;
+    --warn: #e8b04a;
+    --radius: 16px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); }
+  .wrap { width: 100%; max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---- Header ---- */
+  header { padding: 22px 0; }
+  header .wrap { display: flex; align-items: center; gap: 12px; }
+  .wordmark { font-family: "Yatra One", serif; font-size: 24px; letter-spacing: 0.3px; }
+  .eye { width: 38px; height: 38px; flex: none; }
+  .eye .lid-open { transform-origin: 16px 16px; }
+  body.awake .eye .lid-open { animation: blink 6s infinite; }
+  body:not(.awake) .eye .lid-open { display: none; }
+  body.awake .eye .lid-closed { display: none; }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.08); } }
+
+  /* ---- Hero / timer ---- */
+  .hero { text-align: center; padding: 48px 0 40px; }
+  .hero h1 {
+    font-family: "Yatra One", serif;
+    font-weight: 400;
+    font-size: clamp(28px, 5vw, 40px);
+    margin: 0 0 6px;
+  }
+  .hero h1 .accent { color: var(--accent); }
+  .hero .sub { color: var(--muted); margin: 0; }
+  .timer {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(56px, 13vw, 112px);
+    line-height: 1;
+    letter-spacing: -2px;
+    margin: 28px 0 10px;
+    color: var(--faint);
+    transition: color 0.4s;
+  }
+  body.awake .timer { color: var(--text); }
+  .timer-label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; }
+
+  /* ---- Cards ---- */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding-bottom: 40px; }
+  @media (max-width: 820px) { .cards { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .card.on { border-color: rgba(245, 166, 35, 0.45); box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.15), 0 12px 40px -20px rgba(245, 166, 35, 0.35); }
+  .card-head { display: flex; align-items: center; gap: 12px; }
+  .icon {
+    width: 40px; height: 40px; border-radius: 12px; flex: none;
+    display: grid; place-items: center;
+    background: var(--surface-2); color: var(--muted);
+    transition: background 0.3s, color 0.3s;
+  }
+  .card.on .icon { background: var(--accent-soft); color: var(--accent); }
+  .icon svg { width: 22px; height: 22px; }
+  .card h2 { font-size: 16px; font-weight: 600; margin: 0; flex: 1; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  .switch {
+    position: relative; flex: none;
+    width: 46px; height: 26px; border-radius: 13px;
+    border: 0; padding: 0; cursor: pointer;
+    background: #333843;
+    transition: background 0.25s;
+  }
+  .switch .knob {
+    position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #c9ccd2;
+    transition: transform 0.25s, background 0.25s;
+  }
+  .switch[aria-checked="true"] { background: var(--accent); }
+  .switch[aria-checked="true"] .knob { transform: translateX(20px); background: #fff; }
+  .switch:disabled { opacity: 0.4; cursor: not-allowed; }
+  .switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--muted);
+    margin-top: auto; padding-top: 4px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+  .dot.good { background: var(--good); box-shadow: 0 0 8px var(--good); }
+  .dot.warn { background: var(--warn); }
+  .status .since { margin-left: auto; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--text); }
+
+  .volume { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .volume input { flex: 1; accent-color: var(--accent); }
+
+  .helper {
+    display: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 13px;
+  }
+  .helper.show { display: block; }
+  .helper strong { display: block; margin-bottom: 6px; font-size: 14px; }
+  .helper ol { margin: 8px 0 12px; padding-left: 18px; color: var(--muted); }
+  .helper li { margin: 3px 0; }
+  .helper code { font-size: 12px; color: var(--text); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent); color: #1a1205;
+    font-weight: 600; font-size: 13px;
+    padding: 9px 14px; border-radius: 10px; text-decoration: none;
+  }
+  .btn:hover { filter: brightness(1.08); }
+
+  footer { margin-top: auto; padding: 28px 0 36px; color: var(--faint); font-size: 13px; text-align: center; }
+  footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <svg class="eye" viewBox="0 0 32 32" aria-hidden="true">
+      <g class="lid-open">
+        <path d="M2 16C6 9 11 6 16 6s10 3 14 10c-4 7-9 10-14 10S6 23 2 16z" fill="#f5a623"/>
+        <circle cx="16" cy="16" r="6.5" fill="#0e0f13"/>
+        <circle cx="18.5" cy="13.5" r="2" fill="#fff"/>
+      </g>
+      <g class="lid-closed" fill="none" stroke="#8d94a0" stroke-width="2.4" stroke-linecap="round">
+        <path d="M3 14c4 6 8.5 8 13 8s9-2 13-8"/>
+        <path d="M8 19.5l-2 3M16 22v3.5M24 19.5l2 3"/>
+      </g>
+    </svg>
+    <span class="wordmark">Jaago Mohan</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1 id="headline">Mohan is asleep</h1>
+    <p class="sub" id="subline">Turn something on to wake him up.</p>
+    <div class="timer" id="timer">00:00:00</div>
+    <div class="timer-label" id="timer-label">awake for</div>
+  </section>
+
+  <section class="cards">
+    <!-- Stay Awake -->
+    <article class="card" id="card-awake">
+      <div class="card-head">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </div>
+        <h2 id="t-awake">Stay Awake</h2>
+        <button class="switch" id="sw-awake" role="switch" aria-checked="false" aria-labelledby="t-awake"><span class="knob"></span></button>
+      </div>
+      <p>Keeps your screen on and stops the laptop from dozing off.</p>
+      <div class="status"><span class="dot" id="dot-awake"></span><span id="st-awake">Off</span><span class="since" id="since-awake"></span></div>
+    </article>
+
+    <!-- Stay Active -->
+    <article class="card" id="card-active">
+      <div class="card-head">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l6.5 16 2.3-6.7L19.5 11z"/><path d="M14 14l5 5"/></svg>
+        </div>
+        <h2 id="t-active">Stay Active</h2>
+        <button class="switch" id="sw-active" role="switch" aria-checked="false" aria-labelledby="t-active"><span class="knob"></span></button>
+      </div>
+      <p>Keeps you green on Slack and Teams while you step away.</p>
+      <div class="helper" id="helper">
+        <strong>One-time setup: the Windows helper</strong>
+        Websites can't press keys for you, so a tiny helper does it, and this page switches it on and off.
+        <ol>
+          <li>Download and unzip the helper.</li>
+          <li>Double-click <code>Start Jaago Mohan.cmd</code>. If Windows warns you, choose <em>Run</em>.</li>
+          <li>An eye appears in your system tray. This page connects on its own.</li>
+        </ol>
+        <a class="btn" href="downloads/jaago-mohan-helper.zip" download>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+          Download helper (Windows)
+        </a>
+      </div>
+      <div class="status"><span class="dot" id="dot-active"></span><span id="st-active">Off</span><span class="since" id="since-active"></span></div>
+    </article>
+
+    <!-- Keyboard Sound -->
+    <article class="card" id="card-sound">
+      <div class="card-head">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+        </div>
+        <h2 id="t-sound">Keyboard Sound</h2>
+        <button class="switch" id="sw-sound" role="switch" aria-checked="false" aria-labelledby="t-sound"><span class="knob"></span></button>
+      </div>
+      <p>Soft typing in bursts, like you're deep in work. Plays through your speakers.</p>
+      <label class="volume">Volume <input type="range" id="volume" min="0" max="100" value="60"></label>
+      <div class="status"><span class="dot" id="dot-sound"></span><span id="st-sound">Off</span><span class="since" id="since-sound"></span></div>
+    </article>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Keep this tab open. Everything runs in your browser, and the helper only listens on your own computer.</p>
+    <p>Jaago Mohan Pyaare.</p>
+  </div>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ---- Shared state + timer ------------------------------------------------------------
+const features = { awake: { on: false, since: 0 }, active: { on: false, since: 0 }, sound: { on: false, since: 0 } };
+let sessionSince = 0;
+
+function setOn(name, on) {
+  const f = features[name];
+  if (f.on === on) return;
+  f.on = on;
+  f.since = on ? Date.now() : 0;
+  const any = Object.values(features).some(x => x.on);
+  if (any && !sessionSince) sessionSince = Date.now();
+  if (!any) sessionSince = 0;
+  render();
+}
+
+function fmt(ms) {
+  const s = Math.floor(ms / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+}
+
+function setStatus(name, text, dot) {
+  $('st-' + name).textContent = text;
+  $('dot-' + name).className = 'dot' + (dot ? ' ' + dot : '');
+}
+
+function render() {
+  const now = Date.now();
+  const awake = sessionSince > 0;
+  document.body.classList.toggle('awake', awake);
+  $('timer').textContent = fmt(awake ? now - sessionSince : 0);
+  $('headline').innerHTML = awake ? 'Jaago Mohan <span class="accent">Pyaare</span>' : 'Mohan is asleep';
+  $('subline').textContent = awake ? 'Mohan is up, and so are you, apparently.' : 'Turn something on to wake him up.';
+  document.title = awake ? `${fmt(now - sessionSince)} · Jaago Mohan` : 'Jaago Mohan';
+
+  for (const name of Object.keys(features)) {
+    const f = features[name];
+    $('card-' + name).classList.toggle('on', f.on);
+    $('since-' + name).textContent = f.on ? fmt(now - f.since) : '';
+  }
+
+  // Stay Awake
+  $('sw-awake').setAttribute('aria-checked', wantAwake);
+  if (!wakeSupported) setStatus('awake', "This browser can't keep the screen on. Try Chrome, Edge or Safari.", 'warn');
+  else if (wantAwake && wakeLock) setStatus('awake', 'Screen stays on while this tab is open', 'good');
+  else if (wantAwake) setStatus('awake', 'Paused while this tab is hidden. Come back to resume.', 'warn');
+  else setStatus('awake', awakeError || 'Off');
+
+  // Stay Active
+  $('sw-active').setAttribute('aria-checked', features.active.on || pendingOn);
+  $('helper').classList.toggle('show', pendingOn && !helper.connected);
+  if (pendingOn) setStatus('active', 'Waiting for the helper…', 'warn');
+  else if (features.active.on) setStatus('active', 'On · keeps you green after 1 min idle', 'good');
+  else if (helper.connected) setStatus('active', 'Off · helper connected');
+  else setStatus('active', 'Off · needs the Windows helper');
+
+  // Keyboard Sound
+  $('sw-sound').setAttribute('aria-checked', features.sound.on);
+  setStatus('sound', features.sound.on ? 'Typing away…' : 'Off', features.sound.on ? 'good' : '');
+}
+
+setInterval(render, 1000);
+
+// ---- 1. Stay Awake: Screen Wake Lock API ----------------------------------------------
+// The browser drops the lock whenever the tab is hidden, so we take it again on return.
+const wakeSupported = 'wakeLock' in navigator;
+let wakeLock = null, wantAwake = false, awakeError = '';
+
+async function acquireWakeLock() {
+  if (!wantAwake || wakeLock || document.visibilityState !== 'visible') return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; render(); });
+    awakeError = '';
+  } catch (e) {
+    awakeError = "Couldn't keep the screen on: " + e.message;
+  }
+  render();
+}
+
+$('sw-awake').addEventListener('click', async () => {
+  wantAwake = !wantAwake;
+  if (wantAwake) {
+    await acquireWakeLock();
+    if (!wakeLock) { wantAwake = false; }
+  } else if (wakeLock) {
+    await wakeLock.release();
+    wakeLock = null;
+  }
+  setOn('awake', wantAwake);
+  render();
+});
+if (!wakeSupported) $('sw-awake').disabled = true;
+document.addEventListener('visibilitychange', acquireWakeLock);
+
+// ---- 2. Stay Active: talks to the Windows helper on localhost -------------------------
+const HELPER = 'http://localhost:47474';
+const helper = { connected: false };
+let pendingOn = false;   // switched on, waiting for the helper to show up
+
+function remembered() { try { return localStorage.getItem('jm-helper') === '1'; } catch { return false; } }
+function remember()   { try { localStorage.setItem('jm-helper', '1'); } catch {} }
+
+async function api(path, method = 'GET') {
+  const res = await fetch(HELPER + path, { method, signal: AbortSignal.timeout(1500) });
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+// Follows the helper's own state, so pausing from the tray icon shows up here too.
+async function syncHelper() {
+  let s;
+  try { s = await api('/status'); }
+  catch {
+    helper.connected = false;
+    if (!pendingOn) setOn('active', false);
+    render();
+    return;
+  }
+  helper.connected = true;
+  remember();
+  if (pendingOn) {
+    pendingOn = false;
+    try { s = await api('/active/on', 'POST'); } catch {}
+  }
+  setOn('active', s.active);
+  render();
+}
+
+$('sw-active').addEventListener('click', async () => {
+  if (features.active.on || pendingOn) {
+    pendingOn = false;
+    setOn('active', false);
+    if (helper.connected) { try { await api('/active/off', 'POST'); } catch {} }
+    render();
+    return;
+  }
+  pendingOn = true;
+  render();
+  await syncHelper();
+});
+
+// Only poll once the user has asked for it, so a first visit makes no local requests.
+setInterval(() => { if (pendingOn || helper.connected) syncHelper(); }, 4000);
+if (remembered()) syncHelper();
+
+// ---- 3. Keyboard Sound: synthesized with Web Audio -------------------------------------
+let audioCtx = null, gainNode = null, source = null;
+
+// One click: decaying high-passed noise (the "tick") over a low decaying sine (the "thock").
+function addClick(d, sr, start, amp, tone, tau) {
+  const len = Math.floor(0.06 * sr);
+  let prev = 0, lp = 0;
+  for (let i = 0; i < len && start + i < d.length; i++) {
+    const s = i / sr;
+    const n = Math.random() * 2 - 1;
+    const hp = n - prev; prev = n;
+    lp += (hp - lp) * 0.5;
+    const click = lp * Math.exp(-s / tau);
+    const body = Math.sin(2 * Math.PI * tone * s) * Math.exp(-s / 0.012) * 0.6;
+    d[start + i] += amp * (click + body);
+  }
+}
+
+// `seconds` of typing (~70 wpm, words, spacebar, the odd pause), then `gap` seconds of silence.
+function renderBurst(seconds, gap) {
+  const sr = audioCtx.sampleRate;
+  const buf = audioCtx.createBuffer(1, Math.ceil((seconds + gap) * sr), sr);
+  const d = buf.getChannelData(0);
+  let t = 0.05, sinceSpace = 0, wordLen = 3 + Math.floor(Math.random() * 6);
+  while (t < seconds) {
+    const space = sinceSpace >= wordLen;
+    const velocity = 0.6 + Math.random() * 0.4;
+    const tone = space ? 110 + Math.random() * 30 : 180 + Math.random() * 120;
+    const amp = (space ? 0.55 : 0.45) * velocity;
+    const at = Math.floor(t * sr);
+    addClick(d, sr, at, amp, tone, space ? 0.006 : 0.004);                                // key down
+    addClick(d, sr, at + Math.floor((0.05 + Math.random() * 0.06) * sr), amp * 0.35, tone * 1.3, 0.003); // key up
+    if (space) { sinceSpace = 0; wordLen = 2 + Math.floor(Math.random() * 8); } else sinceSpace++;
+    let step = 0.09 + Math.random() * 0.12;
+    if (space && Math.random() < 0.15) step += 0.3 + Math.random() * 0.9;
+    t += step;
+  }
+  for (let i = 0; i < d.length; i++) d[i] = Math.tanh(d[i] * 0.8);
+  return buf;
+}
+
+// Chained on `ended` rather than timers, so it keeps going in a background tab.
+function playNextBurst() {
+  if (!features.sound.on) return;
+  source = audioCtx.createBufferSource();
+  source.buffer = renderBurst(2 + Math.random() * 7, 2 + Math.random() * 13);
+  source.connect(gainNode);
+  source.onended = playNextBurst;
+  source.start();
+}
+
+function applyVolume() {
+  if (gainNode) gainNode.gain.value = Math.pow($('volume').value / 100, 2) * 1.6;
+}
+
+$('sw-sound').addEventListener('click', () => {
+  if (features.sound.on) {
+    setOn('sound', false);
+    if (source) { source.onended = null; source.stop(); source = null; }
+    return;
+  }
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+    gainNode = audioCtx.createGain();
+    gainNode.connect(audioCtx.destination);
+    applyVolume();
+  }
+  audioCtx.resume();
+  setOn('sound', true);
+  playNextBurst();
+});
+$('volume').addEventListener('input', applyVolume);
+
+render();
+</script>
+</body>
+</html>
