@@ -68,6 +68,7 @@ public static class JaagoNative
 
     // Sites allowed to read/drive the helper. Add the custom domain here once it's live.
     static readonly string[] AllowedOrigins = {
+        "https://jaago-mohan.netlify.app",
         "https://sparshgoyal01.github.io",
         "https://sparshgoyal.work",
         "null"                                  // index.html opened straight from disk
